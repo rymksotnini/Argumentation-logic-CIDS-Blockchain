@@ -91,7 +91,7 @@ contract Argumentation {
      * @param arg_target target of the added alert by sender
      * @param arg_source source of the added alert by sender
      */
-    function addArgument(bytes32 arg_type, bytes32 arg_target, bytes32 arg_source) public {
+    function addArgument(string memory arg_type, string memory arg_target, string memory arg_source) public {
         require(
             newArgumentor(msg.sender),
             "Only a node that has not argumented yet, can add an argument"
@@ -105,13 +105,15 @@ contract Argumentation {
         addArgumentor(msg.sender);
         console.log("adding argument");
 
+        
+
         IDS_current_nbr = IDS_current_nbr + 1;
         //generate hash of three arguments for map indexing
-        bytes32 alert = keccak256(abi.encodePacked(arg_type, arg_source, arg_target));
+        bytes32 alert = keccak256(abi.encodePacked(stringToBytes32(arg_type), stringToBytes32(arg_source), stringToBytes32(arg_target)));
         arg_indexing_alert[alert].argumentors.push(msg.sender);
-        arg_indexing_alert[alert]._type = arg_type;
-        arg_indexing_alert[alert]._source = arg_source;
-        arg_indexing_alert[alert]._target = arg_target;
+        arg_indexing_alert[alert]._type = stringToBytes32(arg_type);
+        arg_indexing_alert[alert]._source = stringToBytes32(arg_source);
+        arg_indexing_alert[alert]._target = stringToBytes32(arg_target);
         addToAlertIDLlIndex(alert, alertHash_llIndex);
 
         // test if alert doesn't already exist to add it to the table of alerts
@@ -271,6 +273,17 @@ contract Argumentation {
         }
         winner_= args[i_winner];
     }
+
+    function stringToBytes32(string memory source) public pure returns (bytes32 result) {
+    bytes memory tempEmptyStringTest = bytes(source);
+    if (tempEmptyStringTest.length == 0) {
+        return 0x0;
+    }
+
+    assembly {
+        result := mload(add(source, 32))
+    }
+}
 
     // This function returns the percentage of bytes that are similar
 // between two byte arrays.
