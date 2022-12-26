@@ -21,9 +21,9 @@ contract Argumentation {
     struct Argument {
         address[] argumentors;
         uint32 weight;
-        bytes32 _type;
-        bytes32 _target;
-        bytes32 _source;
+        bytes _type;
+        bytes _target;
+        bytes _source;
     }
 
 // for each argument class we will return winner depending on it and finally see which generated alerts matches the composed winning alert of each class
@@ -91,7 +91,7 @@ contract Argumentation {
      * @param arg_target target of the added alert by sender
      * @param arg_source source of the added alert by sender
      */
-    function addArgument(string memory arg_type, string memory arg_target, string memory arg_source) public {
+    function addArgument(bytes memory arg_type, bytes memory arg_target, bytes memory arg_source) public {
         require(
             newArgumentor(msg.sender),
             "Only a node that has not argumented yet, can add an argument"
@@ -109,16 +109,16 @@ contract Argumentation {
 
         IDS_current_nbr = IDS_current_nbr + 1;
         //generate hash of three arguments for map indexing
-        bytes32 alert = keccak256(abi.encodePacked(stringToBytes32(arg_type), stringToBytes32(arg_source), stringToBytes32(arg_target)));
+        bytes32 alert = keccak256(abi.encodePacked(arg_type, arg_source, arg_target));
         arg_indexing_alert[alert].argumentors.push(msg.sender);
-        arg_indexing_alert[alert]._type = stringToBytes32(arg_type);
-        arg_indexing_alert[alert]._source = stringToBytes32(arg_source);
-        arg_indexing_alert[alert]._target = stringToBytes32(arg_target);
-        addToAlertIDLlIndex(alert, alertHash_llIndex);
 
         // test if alert doesn't already exist to add it to the table of alerts
-        if (arg_indexing_alert[alert]._type == 0 && arg_indexing_alert[alert]._target == 0 && arg_indexing_alert[alert]._source == 0){
+        if (arg_indexing_alert[alert]._type.length == 0 && arg_indexing_alert[alert]._target.length == 0 && arg_indexing_alert[alert]._source.length == 0){
             alerts.push(alert);
+            arg_indexing_alert[alert]._type = arg_type;
+            arg_indexing_alert[alert]._source = arg_source;
+            arg_indexing_alert[alert]._target = arg_target;
+            addToAlertIDLlIndex(alert, alertHash_llIndex);
         }
         
         argumentor_adresses[msg.sender] = true;
@@ -143,9 +143,6 @@ contract Argumentation {
                 final_winner = computeFinalWinner();
                 console.log("final winner: ");
                 emit final_decision_result(final_winner, "final Decision making was a success");
-                console.log("Final winner alert type: ", string(abi.encodePacked(final_winner._type)));
-                console.log("Final winner alert target: ", string(abi.encodePacked(final_winner._target)));
-                console.log("Final winner alert source: ", string(abi.encodePacked(final_winner._source)));
                 console.log("Final winner alert weight: ", final_winner.weight);
             }
         }
@@ -195,7 +192,6 @@ contract Argumentation {
         bytes32 current_id = alertHash_llIndex[0x0];
         while (current_id != 0) {
             console.log("k = ", k);
-            console.log("current_id = ", string(abi.encodePacked(current_id)));
             args[k] = arg_indexing_alert[current_id];
             current_id = alertHash_llIndex[current_id];
             k = k + 1;
@@ -212,7 +208,6 @@ contract Argumentation {
             winners[alert].weight = 1;
         }
         emit decision_result(winner, "Decision making was a success");
-        console.log("winner alert hash: ", string(abi.encodePacked(alert)));
         console.log("winner alert weight: ", winners[alert].weight);
     }
 
@@ -256,9 +251,8 @@ contract Argumentation {
         Argument[] memory args = new Argument[](IDS_threshold);
         uint8 k = 0;
         bytes32 current_winner = winner_llIndex[0x0];
-        while (current_winner != 0) {
+       while (current_winner != 0) {
             console.log("k = ", k);
-            console.log("current_winner = ", string(abi.encodePacked(current_winner)));
             args[k] = winners[current_winner];
             current_winner = winner_llIndex[current_winner];
             k = k + 1;
@@ -274,16 +268,6 @@ contract Argumentation {
         winner_= args[i_winner];
     }
 
-    function stringToBytes32(string memory source) public pure returns (bytes32 result) {
-    bytes memory tempEmptyStringTest = bytes(source);
-    if (tempEmptyStringTest.length == 0) {
-        return 0x0;
-    }
-
-    assembly {
-        result := mload(add(source, 32))
-    }
-}
 
     // This function returns the percentage of bytes that are similar
 // between two byte arrays.
