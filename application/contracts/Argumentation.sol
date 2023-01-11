@@ -160,6 +160,11 @@ contract Argumentation {
         for (uint i=0; i< alerts.length ; i++) {
             delete arg_indexing_alert[alerts[i]];
         }
+        bytes32 current_id = alertHash_llIndex[0x0];
+        while(current_id!=0){
+            delete alertHash_llIndex[current_id];
+            current_id = alertHash_llIndex[current_id];
+        }
         delete alerts;
     }
 
