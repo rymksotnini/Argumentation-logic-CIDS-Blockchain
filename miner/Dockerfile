@@ -5,8 +5,8 @@ RUN add-apt-repository -y ppa:ethereum/ethereum
 RUN apt-get update && apt-get install -y ethereum
 ARG pwd
 ARG pk
-ADD ./application.json ./application.json
-RUN geth --datadir ~/sealer init ./application.json
+ADD ./application-5-nodes.json ./application-5-nodes.json
+RUN geth --datadir ~/sealer init ./application-5-nodes.json
 RUN echo $pwd > `mktemp /tmp/.pwd.XXX`
 RUN echo $pk > `mktemp /tmp/.pk.XXX`
 RUN geth --datadir ~/sealer account import --password /tmp/`ls -al /tmp/ | awk '{print $9}' | grep .pwd` /tmp/`ls -al /tmp/ | awk '{print $9}' | grep .pk`
