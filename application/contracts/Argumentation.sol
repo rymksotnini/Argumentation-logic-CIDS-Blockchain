@@ -196,6 +196,15 @@ contract Argumentation {
         }
     }
 
+    function validateArgument(Argument memory argument) private {
+        if ((argument.idleMean < 10000000 || argument.flowDuration < 10000000) && argument.label == 1) {
+            argument.valid = false;
+        } else if ((argument.idleMean > 10000000 || argument.flowDuration > 10000000) && argument.label == 0){
+            argument.valid = false;
+        }
+        //chech if argument is passed correctly to the other method
+    }
+
    /** 
      * @dev Add argumentor to the table of argumentors
      * @param sender the address of the sender which is the argumentor
