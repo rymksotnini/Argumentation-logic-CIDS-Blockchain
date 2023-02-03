@@ -126,8 +126,9 @@ contract Argumentation {
         arg_indexing_alert[alert]._flowDuration = flowDuration;
         arg_indexing_alert[alert]._idleMean = idleMean;
         arg_indexing_alert[alert]._label = label;
-        arg_indexing_alert[alert]._cluster_id =  cluster_id;
+        arg_indexing_alert[alert]._cluster_id = cluster_id;
         arg_indexing_alert[alert].valid =  true;
+
 
         // validate the argument (test if premise and conclusion don't contradict)
         validateArgument(arg_indexing_alert[alert]);
@@ -138,12 +139,13 @@ contract Argumentation {
 
         //add it to the coresponding cluster
         argument_clusters[arg_indexing_alert[alert]._cluster_id].arguments.push(arg_indexing_alert[alert]);
+        argument_clusters[arg_indexing_alert[alert]._cluster_id]._cluster_id = cluster_id;
         addToClusteringLlIndex(cluster_id, argument_clusters_llIndex);
 
         
         argumentor_adresses[msg.sender] = true;
-        /* address_indexing_alert_id[msg.sender].alert_id = alert;
-        arguments[msg.sender].initialized = true; */
+        /*address_indexing_alert_id[msg.sender].alert_id = alert;
+        arguments[msg.sender].initialized = true;*/
 
         if (IDS_current_nbr == IDS_threshold) {
             // emit event to be catched in the front end
@@ -156,7 +158,6 @@ contract Argumentation {
             doArgumentation();
            
             current_arg_calls_nbr = current_arg_calls_nbr + 1; 
-            resetArgumentationParams();
 
             // see if we are in the final argumentation
             if (current_arg_calls_nbr == args_final_nbr) {
@@ -174,6 +175,7 @@ contract Argumentation {
                     emit decision_result(final_winner, "N/A");
                 }
             }
+            resetArgumentationParams();
         }
     }
 
@@ -201,6 +203,12 @@ contract Argumentation {
         uint8 current_cluster_id = argument_clusters_llIndex[0x0];
         while(current_cluster_id != 0){
             delete argument_clusters[current_cluster_id].arguments;
+            //delete argument_clusters[current_cluster_id]; don't reset because need weight
+            current_cluster_id = argument_clusters_llIndex[current_cluster_id];
+        }
+        current_cluster_id = argument_clusters_llIndex[0x0];
+        while(current_cluster_id != 0){
+            delete argument_clusters_llIndex[current_cluster_id];
             current_cluster_id = argument_clusters_llIndex[current_cluster_id];
         }
     }
@@ -249,17 +257,16 @@ contract Argumentation {
         
         console.log("argumentation finished");
         uint8 winner_id = computeWinner(clusters);
-
-        if (clusters[winner_id].arguments.length != 1) {
-            if (clusters[winner_id].weight >= 1 ) {
-                clusters[winner_id].weight = clusters[winner_id].weight + 1;
+        if (argument_clusters[winner_id].arguments.length != 1) {
+            if (argument_clusters[winner_id].weight >= 1 ) {
+                argument_clusters[winner_id].weight = argument_clusters[winner_id].weight + 1;
             }
             else {
-                clusters[winner_id].weight = 1;
+                argument_clusters[winner_id].weight = 1;
             }
-            emit decision_result(clusters[winner_id], "Decision making was a success");
-            console.log("winner cluster weight: ", clusters[winner_id].weight);
-            console.log("winner cluster id: ", clusters[winner_id]._cluster_id);
+            emit decision_result(argument_clusters[winner_id], "Decision making was a success");
+            console.log("winner cluster weight: ", argument_clusters[winner_id].weight);
+            console.log("winner cluster id: ", argument_clusters[winner_id]._cluster_id);
         }
         else {
             ArgumentSet memory winner;
@@ -297,6 +304,7 @@ contract Argumentation {
     function computeWinner(ArgumentSet[] memory _args) private pure
             returns (uint8 i_winner) 
     {
+        i_winner = 0;
         for (uint8 i = 0; i < _args.length; i++) {
             if (_args[i].arguments.length > _args[i_winner].arguments.length) {
                 // checks if arguments of cluster are valid, checking one is enough 
@@ -305,6 +313,7 @@ contract Argumentation {
                 }
             }
         }
+        i_winner = _args[i_winner]._cluster_id; // to get the winning cluster id not the index of winning cluster in the array
         //if winner's argumentor length equal to 1 it means none has won
         
     }
@@ -322,7 +331,9 @@ contract Argumentation {
            if (argument_clusters[current_cluster].weight > argument_clusters[i_winner].weight) {
                 i_winner = current_cluster;
             }
+            current_cluster = argument_clusters_llIndex[current_cluster];
         }
+        console.log("i_winner", i_winner);
         console.log("argumentation finished");
 
 
