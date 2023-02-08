@@ -1,0 +1,47 @@
+eth_miner4:
+    restart: on-failure:5
+    hostname: miner4
+    depends_on:
+      - eth_bootnode
+    environment:
+      - addr=0xbcD3dF4be3f1A5A31D67B631299081f3a6eaB254
+      - id=4cb7dc25aaeb769ae94ce002e2ecd5232d9421a81c3cc63620a79db127778dd89c61348e7475a1e977cb72121098d364451bcbbaffd2981e306408d4b2405a6e
+      - ip=172.28.1.10
+    build:
+      context: ./miner
+      args:
+        pk: fda7f055ae33f31ec504c210e7190bbeb49467c8f3427a6af425a42bfbeb59b6
+        pwd: hello01 # 9 USA korean 5 korean skype korean VISA GOLF ZIP drip TOKYO skype usa 8 7
+    container_name: miner4
+    ports:
+      # http port
+      - 8548:59767
+    volumes:
+     - eth_data_miner4:/root/.ethash
+    networks:
+      eth_private_network:
+        ipv4_address: 172.28.1.13
+
+  eth_miner5:
+    restart: on-failure:5
+    hostname: miner5
+    depends_on:
+      - eth_bootnode
+    environment:
+      - addr=0x87CDF88B1791656c338a266a6f216A68FC60F877
+      - id=4cb7dc25aaeb769ae94ce002e2ecd5232d9421a81c3cc63620a79db127778dd89c61348e7475a1e977cb72121098d364451bcbbaffd2981e306408d4b2405a6e
+      - ip=172.28.1.10
+    build:
+      context: ./miner
+      args:
+        pk: 816c3fd94b42814a4f750bafc6b2b32a6c065f28a8eeca92ac59c7ccd0271d4a
+        pwd: hello01 # 9 USA korean 5 korean skype korean VISA GOLF ZIP drip TOKYO skype usa 8 7
+    container_name: miner5
+    ports:
+      # http port
+      - 8549:59767
+    volumes:
+     - eth_data_miner5:/root/.ethash
+    networks:
+      eth_private_network:
+        ipv4_address: 172.28.1.14

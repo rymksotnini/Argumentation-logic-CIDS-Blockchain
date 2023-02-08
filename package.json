@@ -1,0 +1,26 @@
+{
+  "dependencies": {
+    "ethers": "^6.0.2"
+  },
+  "name": "argumentation-logic-cids-blockchain",
+  "description": "Introduce an argumentation logic in a collective intrusion detection system depolyed in a zero trust environment for the minority to have a word",
+  "version": "1.0.0",
+  "main": "index.js",
+  "devDependencies": {
+    "hardhat": "^2.12.6",
+    "typescript": "^4.9.5"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rymksotnini/Argumentation-logic-CIDS-Blockchain.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rymksotnini/Argumentation-logic-CIDS-Blockchain/issues"
+  },
+  "homepage": "https://github.com/rymksotnini/Argumentation-logic-CIDS-Blockchain#readme"
+}
