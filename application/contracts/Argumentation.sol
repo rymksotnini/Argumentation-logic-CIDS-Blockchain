@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-
 import "hardhat/console.sol";
-
 pragma solidity >=0.7.0 <0.9.0;
 
 /** 
@@ -63,13 +61,15 @@ contract Argumentation {
     // an array that indicates the state of an argumentation process
     // bool[] public argumentation_history;
     // the winning result after each argumentation
-    // mapping (bytes32 => Argument) public winners;  //won't need this now
-    // Indexing to be able to parse the different winners
-    // mapping (bytes32 => bytes32) winner_llIndex; // same won't need
+    mapping (uint8 => ArgumentSet) public winning_clusters;  //won't need this now
+    //Indexing to be able to parse the different winners
+    mapping (uint8 => uint8) winning_clusters_llIndex; // same won't need
     // the event that will be emited once the argumentation ends
     event decision_result(ArgumentSet argumentSet, string message);
     // the event that will be emited once the number of the necessary argumentations has been reached
     event final_decision_result(ArgumentSet argumentSet, string message);
+
+    event logging(string message);
 
 
     constructor(uint8 IDS_number, uint8 args_threshold
@@ -110,7 +110,7 @@ contract Argumentation {
         );
 
         addArgumentor(msg.sender);
-        console.log("adding argument");
+        //console.log("adding argument");
 
         
 
@@ -147,34 +147,36 @@ contract Argumentation {
         /*address_indexing_alert_id[msg.sender].alert_id = alert;
         arguments[msg.sender].initialized = true;*/
 
+        emit logging("Argument added");
+
         if (IDS_current_nbr == IDS_threshold) {
             // emit event to be catched in the front end
             // or execute directly the argumentation (internal function call)
-            require(
-            current_arg_calls_nbr < args_final_nbr,
-            "The number of launched argumentations cannot exceed the fixed threshold"
-            );
-            console.log("calling argumentation");
+           /* emit logging("calling argumentation");
+            //console.log("calling argumentation");
+            
             doArgumentation();
-           
-            current_arg_calls_nbr = current_arg_calls_nbr + 1; 
+            
+            current_arg_calls_nbr = current_arg_calls_nbr + 1;
 
             // see if we are in the final argumentation
             if (current_arg_calls_nbr == args_final_nbr) {
+
                 uint8 id_final_winner = computeFinalWinner();
 
-                if (argument_clusters[id_final_winner].arguments.length != 1) {
-                    emit final_decision_result(argument_clusters[id_final_winner], "final Decision making was a success");
-                    console.log("final winner cluster weight: ", argument_clusters[id_final_winner].weight);
-                    console.log("final winner cluster id: ", argument_clusters[id_final_winner]._cluster_id);
+                if (winning_clusters[id_final_winner].weight != 1) {
+                    emit final_decision_result(winning_clusters[id_final_winner], "final Decision making was a success");
+                    //console.log("final winner cluster weight: ", argument_clusters[id_final_winner].weight);
+                    //console.log("final winner cluster id: ", argument_clusters[id_final_winner]._cluster_id);
                 }
                 else {
                     ArgumentSet memory final_winner;
                     final_winner.weight = 0;
-                    final_winner._cluster_id = 0; 
+                    final_winner._cluster_id = 0;
                     emit decision_result(final_winner, "N/A");
                 }
-            }
+                current_arg_calls_nbr = 0;
+            }*/
             resetArgumentationParams();
         }
     }
@@ -183,13 +185,15 @@ contract Argumentation {
      * @dev Reset the argumentation parameters
      */
     function resetArgumentationParams() private {
-        console.log("Reseting params");
+        //console.log("Reseting params");
         IDS_current_nbr = 0;
         for (uint i=0; i< active_argumentors.length ; i++) {
             argumentor_adresses[active_argumentors[i]] = false;
         }
 
-        bytes32 current_id = alertHash_llIndex[0x0];
+        // !!!!! The problem is in the reset lezim nal9a hal necrazi bih wela nzid(ex:fil key mtaa l map nzid number of the round bich meto5olch baa4ha) min8ir menaamil delete 
+
+        /*bytes32 current_id = alertHash_llIndex[0x0];
         while (current_id != 0) {
             delete arg_indexing_alert[current_id];
             current_id = alertHash_llIndex[current_id];
@@ -203,14 +207,14 @@ contract Argumentation {
         uint8 current_cluster_id = argument_clusters_llIndex[0x0];
         while(current_cluster_id != 0){
             delete argument_clusters[current_cluster_id].arguments;
-            //delete argument_clusters[current_cluster_id]; don't reset because need weight
+            delete argument_clusters[current_cluster_id]; //don't reset because need weight
             current_cluster_id = argument_clusters_llIndex[current_cluster_id];
         }
         current_cluster_id = argument_clusters_llIndex[0x0];
         while(current_cluster_id != 0){
             delete argument_clusters_llIndex[current_cluster_id];
             current_cluster_id = argument_clusters_llIndex[current_cluster_id];
-        }
+        }*/
     }
 
     function validateArgument(Argument storage argument) private {
@@ -245,28 +249,38 @@ contract Argumentation {
      */
     function doArgumentation() private {
         
-        ArgumentSet[] memory clusters = new ArgumentSet[](IDS_threshold);
-        uint8 k = 0;
+        //ArgumentSet[] memory clusters = new ArgumentSet[](IDS_threshold);
+        //uint8 k = 0;
         uint8 current_id = argument_clusters_llIndex[0x0];
+        uint8 winner_id = current_id;
         while (current_id != 0) {
-            console.log("k = ", k);
-            clusters[k] = argument_clusters[current_id];
+            if (argument_clusters[current_id].arguments.length > argument_clusters[winner_id].arguments.length) {
+                // checks if arguments of cluster are valid, checking one is enough 
+                if (argument_clusters[current_id].arguments[0].valid) {
+                    console.log("winner current id: ", current_id);
+                    winner_id = current_id;
+                }
+            }
+            //console.log("k = ", k);
+            //clusters[k] = argument_clusters[current_id];
             current_id = argument_clusters_llIndex[current_id];
-            k = k + 1;
+            //k = k + 1;
         }
-        
+        //emit logging("argumentation finished");
         console.log("argumentation finished");
-        uint8 winner_id = computeWinner(clusters);
+        //uint8 winner_id = computeWinner(clusters);
         if (argument_clusters[winner_id].arguments.length != 1) {
-            if (argument_clusters[winner_id].weight >= 1 ) {
-                argument_clusters[winner_id].weight = argument_clusters[winner_id].weight + 1;
+            if (winning_clusters[winner_id].weight >= 1 ) {
+                winning_clusters[winner_id].weight = winning_clusters[winner_id].weight + 1;
             }
             else {
-                argument_clusters[winner_id].weight = 1;
+                winning_clusters[winner_id].weight = 1;
+                addToClusteringLlIndex(winner_id, winning_clusters_llIndex);
+                winning_clusters[winner_id]._cluster_id = winner_id;
             }
             emit decision_result(argument_clusters[winner_id], "Decision making was a success");
-            console.log("winner cluster weight: ", argument_clusters[winner_id].weight);
-            console.log("winner cluster id: ", argument_clusters[winner_id]._cluster_id);
+            //console.log("winner cluster weight: ", argument_clusters[winner_id].weight);
+            //console.log("winner cluster id: ", argument_clusters[winner_id]._cluster_id);
         }
         else {
             ArgumentSet memory winner;
@@ -322,20 +336,20 @@ contract Argumentation {
      * @dev get the final winning argument by calculating the majority  
      * @return i_winner the final winning argument id (holding the majority)
      */
-    function computeFinalWinner() private view
+    function computeFinalWinner() private
             returns (uint8 i_winner) 
     {
-        uint8 current_cluster = argument_clusters_llIndex[0x0];
-        i_winner = argument_clusters_llIndex[0x0];
+        uint8 current_cluster = winning_clusters_llIndex[0x0];
+        i_winner = winning_clusters_llIndex[0x0];
         while (current_cluster != 0) {
-           if (argument_clusters[current_cluster].weight > argument_clusters[i_winner].weight) {
+           if (winning_clusters[current_cluster].weight > winning_clusters[i_winner].weight) {
                 i_winner = current_cluster;
             }
-            current_cluster = argument_clusters_llIndex[current_cluster];
+            current_cluster = winning_clusters_llIndex[current_cluster];
         }
         console.log("i_winner", i_winner);
         console.log("argumentation finished");
-
+        emit logging("final argumentation finished");
 
     }
 
