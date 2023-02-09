@@ -9,12 +9,7 @@ pragma solidity >=0.7.0 <0.9.0;
 
 contract Argumentation {
 
-    /* struct Argument {
-        uint32 alert_id;
-        bool initialized;
-    } */
-
-//we still need this to return the winning argument in a whole
+    //we still need this to return the winning argument in a whole
 
     struct Argument {
         address argumentor;
@@ -34,21 +29,17 @@ contract Argumentation {
         uint32 weight; // increment each loop to know the winner
     }
 
-    mapping (uint8 => ArgumentSet) argument_clusters;
+    mapping (bytes32 => ArgumentSet) argument_clusters;
 
-    mapping (uint8 => uint8) argument_clusters_llIndex;  // to delete and parse argumentSet after
+    mapping (bytes32 => bytes32) argument_clusters_llIndex;  // to delete and parse argumentSet after
     //added to be able to reset the mapping argumentor_adresses
     address[] active_argumentors;
     // mapping that shows if an address represents an argumentor(added an argument) or not
     mapping (address => bool) public argumentor_adresses;
-    // for an alert hash this mapping help in finding the related argument 
-    mapping (bytes32 => Argument) public arg_indexing_alert;
-    // alert hash linked list indexes
-    mapping (bytes32 => bytes32) alertHash_llIndex; 
 
-    // A static number that represents the number of IDSs present in the network 
+    // A static number that represents the number of IDSs present in the network
     uint8 public IDS_threshold;
-    // An incrementable number that represents the actual number of IDSs that participated in the argumentation 
+    // An incrementable number that represents the actual number of IDSs that participated in the argumentation
     uint8 public IDS_current_nbr;
 
     // A mapping between each argument and the address of the node that presents it (Will a bijection be needed between the IDS node and the blockchain node (an address that represents both) Frédéric?)
@@ -58,12 +49,10 @@ contract Argumentation {
     uint8 public current_arg_calls_nbr;
     // a static number to indicate the threshold to reach the decision
     uint8 public args_final_nbr;
-    // an array that indicates the state of an argumentation process
-    // bool[] public argumentation_history;
     // the winning result after each argumentation
-    mapping (uint8 => ArgumentSet) public winning_clusters;  //won't need this now
+    mapping (bytes32 => ArgumentSet) public winning_clusters;  //won't need this now
     //Indexing to be able to parse the different winners
-    mapping (uint8 => uint8) winning_clusters_llIndex; // same won't need
+    mapping (bytes32 => bytes32) winning_clusters_llIndex; // same won't need
     // the event that will be emited once the argumentation ends
     event decision_result(ArgumentSet argumentSet, string message);
     // the event that will be emited once the number of the necessary argumentations has been reached
@@ -75,23 +64,19 @@ contract Argumentation {
     constructor(uint8 IDS_number, uint8 args_threshold
     // , uint8 history_length
     ) {
-        
-        /* argumentation_history = new bool[](history_length);
-        for (uint8 i = 0; i < history_length; i++) {
-            argumentation_history[i] = false;
-        } */
+
 
         args_final_nbr = args_threshold;
 
         IDS_threshold = IDS_number;
 
-        current_arg_calls_nbr = 0; 
+        current_arg_calls_nbr = 0;
 
         IDS_current_nbr = 0;
 
     }
 
-    /** 
+    /**
      * @dev Add the IDS's argument to the argumentation logic
      * @param flowDuration flowDuration of the added alert by sender
      * @param idleMean idleMean of the added alert by sender
@@ -112,37 +97,32 @@ contract Argumentation {
         addArgumentor(msg.sender);
         //console.log("adding argument");
 
-        
+
 
         IDS_current_nbr = IDS_current_nbr + 1;
-        
-        //Argument storage argument; //= Argument(msg.sender, flowDuration, idleMean, label, cluster_id, true);
 
-        //generate hash of three arguments for map indexing
-        bytes32 alert = keccak256(abi.encodePacked(msg.sender, flowDuration, idleMean, label));
-        
-        //store the argument
-        arg_indexing_alert[alert].argumentor = msg.sender;
-        arg_indexing_alert[alert]._flowDuration = flowDuration;
-        arg_indexing_alert[alert]._idleMean = idleMean;
-        arg_indexing_alert[alert]._label = label;
-        arg_indexing_alert[alert]._cluster_id = cluster_id;
-        arg_indexing_alert[alert].valid =  true;
 
+        Argument memory argument;
+
+        argument.argumentor = msg.sender;
+        argument._flowDuration = flowDuration;
+        argument._idleMean = idleMean;
+        argument._label = label;
+        argument._cluster_id = cluster_id;
+        argument.valid =  true;
 
         // validate the argument (test if premise and conclusion don't contradict)
-        validateArgument(arg_indexing_alert[alert]);
+        validateArgument(argument);
 
         //invalid aruments will be saved considered but will be aliminated in the argumentation
-        
-        addToAlertIDLlIndex(alert, alertHash_llIndex);
 
         //add it to the coresponding cluster
-        argument_clusters[arg_indexing_alert[alert]._cluster_id].arguments.push(arg_indexing_alert[alert]);
-        argument_clusters[arg_indexing_alert[alert]._cluster_id]._cluster_id = cluster_id;
-        addToClusteringLlIndex(cluster_id, argument_clusters_llIndex);
+        bytes32 cluster_hash = keccak256(abi.encodePacked(current_arg_calls_nbr, argument._cluster_id));
+        argument_clusters[cluster_hash].arguments.push(argument);
+        argument_clusters[cluster_hash]._cluster_id = cluster_id;
+        addToClusteringLlIndex(cluster_hash, argument_clusters_llIndex);
 
-        
+
         argumentor_adresses[msg.sender] = true;
         /*address_indexing_alert_id[msg.sender].alert_id = alert;
         arguments[msg.sender].initialized = true;*/
@@ -150,24 +130,21 @@ contract Argumentation {
         emit logging("Argument added");
 
         if (IDS_current_nbr == IDS_threshold) {
-            // emit event to be catched in the front end
-            // or execute directly the argumentation (internal function call)
-           /* emit logging("calling argumentation");
-            //console.log("calling argumentation");
-            
+
+
             doArgumentation();
-            
+
             current_arg_calls_nbr = current_arg_calls_nbr + 1;
 
             // see if we are in the final argumentation
             if (current_arg_calls_nbr == args_final_nbr) {
 
-                uint8 id_final_winner = computeFinalWinner();
+                bytes32 id_final_winner = computeFinalWinner();
 
                 if (winning_clusters[id_final_winner].weight != 1) {
                     emit final_decision_result(winning_clusters[id_final_winner], "final Decision making was a success");
-                    //console.log("final winner cluster weight: ", argument_clusters[id_final_winner].weight);
-                    //console.log("final winner cluster id: ", argument_clusters[id_final_winner]._cluster_id);
+                    console.log("final winner cluster weight: ", argument_clusters[id_final_winner].weight);
+                    console.log("final winner cluster id: ", argument_clusters[id_final_winner]._cluster_id);
                 }
                 else {
                     ArgumentSet memory final_winner;
@@ -176,14 +153,14 @@ contract Argumentation {
                     emit decision_result(final_winner, "N/A");
                 }
                 current_arg_calls_nbr = 0;
-            }*/
+            }
             resetArgumentationParams();
         }
     }
 
-     /** 
-     * @dev Reset the argumentation parameters
-     */
+    /**
+    * @dev Reset the argumentation parameters
+    */
     function resetArgumentationParams() private {
         //console.log("Reseting params");
         IDS_current_nbr = 0;
@@ -191,33 +168,15 @@ contract Argumentation {
             argumentor_adresses[active_argumentors[i]] = false;
         }
 
-        // !!!!! The problem is in the reset lezim nal9a hal necrazi bih wela nzid(ex:fil key mtaa l map nzid number of the round bich meto5olch baa4ha) min8ir menaamil delete 
+        bytes32 current_cluster_id = argument_clusters_llIndex[0x0];
 
-        /*bytes32 current_id = alertHash_llIndex[0x0];
-        while (current_id != 0) {
-            delete arg_indexing_alert[current_id];
-            current_id = alertHash_llIndex[current_id];
-        }
-
-        current_id = alertHash_llIndex[0x0];
-        while(current_id != 0){
-            delete alertHash_llIndex[current_id];
-            current_id = alertHash_llIndex[current_id];
-        }
-        uint8 current_cluster_id = argument_clusters_llIndex[0x0];
-        while(current_cluster_id != 0){
-            delete argument_clusters[current_cluster_id].arguments;
-            delete argument_clusters[current_cluster_id]; //don't reset because need weight
-            current_cluster_id = argument_clusters_llIndex[current_cluster_id];
-        }
-        current_cluster_id = argument_clusters_llIndex[0x0];
         while(current_cluster_id != 0){
             delete argument_clusters_llIndex[current_cluster_id];
             current_cluster_id = argument_clusters_llIndex[current_cluster_id];
-        }*/
+        }
     }
 
-    function validateArgument(Argument storage argument) private {
+    function validateArgument(Argument memory argument) pure private {
         if ((argument._idleMean < 10000000 || argument._flowDuration < 10000000) && argument._label == 1) {
             argument.valid = false;
         } else if ((argument._idleMean > 10000000 || argument._flowDuration > 10000000) && argument._label == 0){
@@ -226,49 +185,44 @@ contract Argumentation {
         //chech if argument is passed correctly to the other method
     }
 
-   /** 
-     * @dev Add argumentor to the table of argumentors
-     * @param sender the address of the sender which is the argumentor
-     */
+    /**
+      * @dev Add argumentor to the table of argumentors
+      * @param sender the address of the sender which is the argumentor
+      */
     function addArgumentor(address sender) private {
         active_argumentors.push(sender);
     }
 
-    /** 
-     * @dev returns false if an arguement for the specified address already exists 
+    /**
+     * @dev returns false if an arguement for the specified address already exists
      * @return newArgumentor_ the state of the argument
      */
     function newArgumentor(address sender) public view
-            returns (bool newArgumentor_)
+    returns (bool newArgumentor_)
     {
         newArgumentor_ = (argumentor_adresses[sender] == false);
     }
 
-    /** 
-     * @dev launch the argumentation process 
+    /**
+     * @dev launch the argumentation process
      */
     function doArgumentation() private {
-        
+
         //ArgumentSet[] memory clusters = new ArgumentSet[](IDS_threshold);
         //uint8 k = 0;
-        uint8 current_id = argument_clusters_llIndex[0x0];
-        uint8 winner_id = current_id;
+        bytes32 current_id = argument_clusters_llIndex[0x0];
+        bytes32 winner_id = current_id;
         while (current_id != 0) {
             if (argument_clusters[current_id].arguments.length > argument_clusters[winner_id].arguments.length) {
-                // checks if arguments of cluster are valid, checking one is enough 
+                // checks if arguments of cluster are valid, checking one is enough
                 if (argument_clusters[current_id].arguments[0].valid) {
-                    console.log("winner current id: ", current_id);
                     winner_id = current_id;
                 }
             }
-            //console.log("k = ", k);
-            //clusters[k] = argument_clusters[current_id];
+
             current_id = argument_clusters_llIndex[current_id];
-            //k = k + 1;
         }
-        //emit logging("argumentation finished");
         console.log("argumentation finished");
-        //uint8 winner_id = computeWinner(clusters);
         if (argument_clusters[winner_id].arguments.length != 1) {
             if (winning_clusters[winner_id].weight >= 1 ) {
                 winning_clusters[winner_id].weight = winning_clusters[winner_id].weight + 1;
@@ -276,22 +230,20 @@ contract Argumentation {
             else {
                 winning_clusters[winner_id].weight = 1;
                 addToClusteringLlIndex(winner_id, winning_clusters_llIndex);
-                winning_clusters[winner_id]._cluster_id = winner_id;
+                winning_clusters[winner_id]._cluster_id = argument_clusters[winner_id]._cluster_id;
             }
             emit decision_result(argument_clusters[winner_id], "Decision making was a success");
-            //console.log("winner cluster weight: ", argument_clusters[winner_id].weight);
-            //console.log("winner cluster id: ", argument_clusters[winner_id]._cluster_id);
         }
         else {
             ArgumentSet memory winner;
             winner.weight = 0;
-            winner._cluster_id = 0; 
+            winner._cluster_id = 0;
             emit decision_result(winner, "No winner for this round");
         }
     }
 
-    /** 
-     * @dev add id in the linked list of ID indexes 
+    /**
+     * @dev add id in the linked list of ID indexes
      * @param _id the alert ID to add in the list
      */
     function addToAlertIDLlIndex(bytes32 _id, mapping (bytes32 => bytes32) storage llIndex) private
@@ -302,7 +254,7 @@ contract Argumentation {
         }
     }
 
-    function addToClusteringLlIndex(uint8 _id, mapping (uint8 => uint8) storage llIndex) private
+    function addToClusteringLlIndex(bytes32 _id, mapping (bytes32 => bytes32) storage llIndex) private
     {
         if (!(_id == llIndex[0x0] || llIndex[_id] != 0 )) {
             llIndex[_id] = llIndex[0x0];
@@ -310,46 +262,23 @@ contract Argumentation {
         }
     }
 
-    /** 
-     * @dev get the winner from a list of arguments by computing the arguments that is held by the majority  
-     * @param _args list of arguments to determine which is the winner
-     * @return i_winner the winning argument cluter id (holding the majority)
-     */
-    function computeWinner(ArgumentSet[] memory _args) private pure
-            returns (uint8 i_winner) 
-    {
-        i_winner = 0;
-        for (uint8 i = 0; i < _args.length; i++) {
-            if (_args[i].arguments.length > _args[i_winner].arguments.length) {
-                // checks if arguments of cluster are valid, checking one is enough 
-                if (_args[i].arguments[0].valid) {
-                    i_winner = i;
-                }
-            }
-        }
-        i_winner = _args[i_winner]._cluster_id; // to get the winning cluster id not the index of winning cluster in the array
-        //if winner's argumentor length equal to 1 it means none has won
-        
-    }
-
-    /** 
-     * @dev get the final winning argument by calculating the majority  
+    /**
+     * @dev get the final winning argument by calculating the majority
      * @return i_winner the final winning argument id (holding the majority)
      */
-    function computeFinalWinner() private
-            returns (uint8 i_winner) 
+    function computeFinalWinner() view private
+    returns (bytes32 i_winner)
     {
-        uint8 current_cluster = winning_clusters_llIndex[0x0];
+        bytes32 current_cluster = winning_clusters_llIndex[0x0];
         i_winner = winning_clusters_llIndex[0x0];
         while (current_cluster != 0) {
-           if (winning_clusters[current_cluster].weight > winning_clusters[i_winner].weight) {
+            if (winning_clusters[current_cluster].weight > winning_clusters[i_winner].weight) {
                 i_winner = current_cluster;
             }
             current_cluster = winning_clusters_llIndex[current_cluster];
         }
-        console.log("i_winner", i_winner);
         console.log("argumentation finished");
-        emit logging("final argumentation finished");
+        //emit logging("final argumentation finished");
 
     }
 
