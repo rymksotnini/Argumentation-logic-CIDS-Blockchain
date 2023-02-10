@@ -2,7 +2,7 @@ from web3 import Web3
 import json
 from web3.middleware import geth_poa_middleware
 
-address = "0x488B8D0431EFC94E1a206b18CF722546122aA5e3"
+address = "0xbfe2298a034cefB3310B16A9A483D43cD825a733"
 abi = json.loads(open("../contracts/Argumentation.json", 'r').read())['abi']
 
 web3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))

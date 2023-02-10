@@ -50,9 +50,9 @@ contract Argumentation {
     // a static number to indicate the threshold to reach the decision
     uint8 public args_final_nbr;
     // the winning result after each argumentation
-    mapping (bytes32 => ArgumentSet) public winning_clusters;  //won't need this now
+    mapping (uint8 => ArgumentSet) public winning_clusters;  //won't need this now
     //Indexing to be able to parse the different winners
-    mapping (bytes32 => bytes32) winning_clusters_llIndex; // same won't need
+    mapping (uint8 => uint8) winning_clusters_llIndex; // same won't need
     // the event that will be emited once the argumentation ends
     event decision_result(ArgumentSet argumentSet, string message);
     // the event that will be emited once the number of the necessary argumentations has been reached
@@ -139,18 +139,16 @@ contract Argumentation {
             // see if we are in the final argumentation
             if (current_arg_calls_nbr == args_final_nbr) {
 
-                bytes32 id_final_winner = computeFinalWinner();
+                uint8 id_final_winner = computeFinalWinner();
 
                 if (winning_clusters[id_final_winner].weight != 1) {
                     emit final_decision_result(winning_clusters[id_final_winner], "final Decision making was a success");
-                    console.log("final winner cluster weight: ", argument_clusters[id_final_winner].weight);
-                    console.log("final winner cluster id: ", argument_clusters[id_final_winner]._cluster_id);
                 }
                 else {
                     ArgumentSet memory final_winner;
                     final_winner.weight = 0;
                     final_winner._cluster_id = 0;
-                    emit decision_result(final_winner, "N/A");
+                    emit final_decision_result(final_winner, "N/A");
                 }
                 current_arg_calls_nbr = 0;
             }
@@ -224,13 +222,13 @@ contract Argumentation {
         }
         console.log("argumentation finished");
         if (argument_clusters[winner_id].arguments.length != 1) {
-            if (winning_clusters[winner_id].weight >= 1 ) {
-                winning_clusters[winner_id].weight = winning_clusters[winner_id].weight + 1;
+            if (winning_clusters[argument_clusters[winner_id]._cluster_id].weight >= 1 ) {
+                winning_clusters[argument_clusters[winner_id]._cluster_id].weight = winning_clusters[argument_clusters[winner_id]._cluster_id].weight + 1;
             }
             else {
-                winning_clusters[winner_id].weight = 1;
-                addToClusteringLlIndex(winner_id, winning_clusters_llIndex);
-                winning_clusters[winner_id]._cluster_id = argument_clusters[winner_id]._cluster_id;
+                winning_clusters[argument_clusters[winner_id]._cluster_id].weight = 1;
+                addToWinningClusteringLlIndex(argument_clusters[winner_id]._cluster_id, winning_clusters_llIndex);
+                winning_clusters[argument_clusters[winner_id]._cluster_id]._cluster_id = argument_clusters[winner_id]._cluster_id;
             }
             emit decision_result(argument_clusters[winner_id], "Decision making was a success");
         }
@@ -262,14 +260,22 @@ contract Argumentation {
         }
     }
 
+    function addToWinningClusteringLlIndex(uint8 _id, mapping (uint8 => uint8) storage llIndex) private
+    {
+        if (!(_id == llIndex[0x0] || llIndex[_id] != 0 )) {
+            llIndex[_id] = llIndex[0x0];
+            llIndex[0x0] = _id;
+        }
+    }
+
     /**
      * @dev get the final winning argument by calculating the majority
      * @return i_winner the final winning argument id (holding the majority)
      */
     function computeFinalWinner() view private
-    returns (bytes32 i_winner)
+    returns (uint8 i_winner)
     {
-        bytes32 current_cluster = winning_clusters_llIndex[0x0];
+        uint8 current_cluster = winning_clusters_llIndex[0x0];
         i_winner = winning_clusters_llIndex[0x0];
         while (current_cluster != 0) {
             if (winning_clusters[current_cluster].weight > winning_clusters[i_winner].weight) {
