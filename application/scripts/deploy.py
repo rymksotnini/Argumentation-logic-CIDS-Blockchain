@@ -8,6 +8,7 @@ bytecode = json.loads(open("../contracts/Argumentation.json", 'r').read())['data
 
 web3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
 web3.eth.default_account = web3.eth.accounts[0]
+print(web3.isConnected())
 
 ArgumentationContract = web3.eth.contract(abi=abi, bytecode=bytecode)
 
