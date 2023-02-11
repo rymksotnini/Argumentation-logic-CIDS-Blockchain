@@ -1,7 +1,10 @@
+import sys
+import json
 from web3 import Web3
 import config
 from web3.middleware import geth_poa_middleware
 
+abi = json.loads(open("../contracts/Argumentation.json", 'r').read())['abi']
 
 class Argument:
     def __init__(self, flow_duration, idle_mean, label, cluster_id):
@@ -27,13 +30,15 @@ argumentors = [
 
 
 def main():
+    print(sys.argv[1])
+    address = sys.argv[1]
     for argumentor in argumentors:
         provider = Web3(Web3.HTTPProvider("http://127.0.0.1:" + argumentor.node))
         provider.eth.default_account = provider.eth.accounts[0]
         provider.middleware_onion.inject(geth_poa_middleware, layer=0)
         contract = provider.eth.contract(
-            address=config.address,
-            abi=config.abi
+            address=address,
+            abi=abi
         )
         transaction_hash = contract.functions.addArgument(
             argumentor.argument.flow_duration,

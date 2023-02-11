@@ -1,3 +1,5 @@
+import sys
+
 from web3 import Web3
 import asyncio
 import config
@@ -20,13 +22,14 @@ async def log_loop(event_filter, poll_interval):
 
 
 def main():
-    print(config.address)
-    decision_result_event_filter = config.contract.events.decision_result.createFilter(
+    print(sys.argv[1])
+    address = sys.argv[1]
+    decision_result_event_filter = config.get_contract(address).events.decision_result.createFilter(
         fromBlock='latest'
     )
     loop = asyncio.get_event_loop()
     try:
-        print('Started listening')
+        print('Started listening from decision results')
         loop.run_until_complete(
             asyncio.gather(
                 log_loop(decision_result_event_filter, 2)))
