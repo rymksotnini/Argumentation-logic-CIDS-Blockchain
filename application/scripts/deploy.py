@@ -18,7 +18,7 @@ def get_address():
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     # Submit the transaction for the argumentationContract deployment
-    tx_hash = ArgumentationContract.constructor(3, 2).transact()
+    tx_hash = ArgumentationContract.constructor(3, 3).transact()
 
     # Wait for the deployment to end
     tx_receipt = web3.eth.wait_for_transaction_receipt(tx_hash)

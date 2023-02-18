@@ -1,16 +1,21 @@
+import json
 import deploy
 import subprocess
 
 
 def main():
-    i = 0
-    address = deploy.get_address()
-    subprocess.Popen(["python", "listenToArgsResult.py", address])
-    subprocess.Popen(["python", "listenToFinalResult.py", address])
+    i_scenario = 0
+    filename = "../data/results.json"
+    with open(filename, "w") as fp:
+        json.dump([], fp)
     while True:
-        if i < 1:
-            for i in range(2):
-                subprocess.run(["python", "addArguments.py", address])
+        if i_scenario < 5000:
+            address = deploy.get_address()
+            subprocess.Popen(["python", "listenToArgsResult.py", address, str(i_scenario)])
+            subprocess.Popen(["python", "listenToFinalResult.py", address, str(i_scenario)])
+            for i in range(3):
+                subprocess.run(["python", "addArguments.py", address, str(i_scenario)])
+            i_scenario = i_scenario + 1
 
 
 if __name__ == "__main__":
