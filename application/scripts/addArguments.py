@@ -33,13 +33,15 @@ argumentors_test = [
 
 def main():
     argumentors = []
-    alerts = pd.read_csv(r"../data/data.csv", index_col=["Flow ID"], usecols=["Flow ID", " Flow Duration", "Idle Mean", " Label", "clustering_results"])
+    alerts = pd.read_csv(r"../data/data.csv", index_col=["Flow ID"],
+                         usecols=["Flow ID", " Flow Duration", "Idle Mean", " Label", "clustering_results"])
     print(sys.argv[1])
     address = sys.argv[1]
     i_scenario = int(sys.argv[2])
     node = 8545
-    for index, alert in alerts.iloc[i_scenario*5:i_scenario*5+5].iterrows():
-        argumentors.append(Argumentor(node, Argument(int(alert[" Flow Duration"]), int(alert["Idle Mean"]), int(alert[" Label"]), int(alert["clustering_results"]))))
+    for index, alert in alerts.iloc[i_scenario * 5:i_scenario * 5 + 5].iterrows():
+        argumentors.append(Argumentor(node, Argument(int(alert[" Flow Duration"]), int(alert["Idle Mean"]),
+                                                     int(alert[" Label"]), int(alert["clustering_results"]))))
         node = node + 1
 
     sample = random.sample(range(5), 3)
@@ -53,14 +55,31 @@ def main():
             address=address,
             abi=abi
         )
-        transaction_hash = contract.functions.addArgument(
-            argumentor.argument.flow_duration,
-            argumentor.argument.idle_mean,
-            argumentor.argument.label,
-            argumentor.argument.cluster_id
-        ).transact()
-        receipt = provider.eth.wait_for_transaction_receipt(transaction_hash)
-        print(receipt['status'])
+        # gas_estimate = contract.functions.addArgument(
+        #     argumentor.argument.flow_duration,
+        #     argumentor.argument.idle_mean,
+        #     argumentor.argument.label,
+        #     argumentor.argument.cluster_id
+        #
+        # ).estimateGas({
+        #     'gas': 100000000,
+        # })
+        # print(gas_estimate)
+        try:
+            transaction_hash = contract.functions.addArgument(
+                argumentor.argument.flow_duration,
+                argumentor.argument.idle_mean,
+                argumentor.argument.label,
+                argumentor.argument.cluster_id
+
+            ).transact({
+                # 'gas': 100000000,
+            })
+            receipt = provider.eth.wait_for_transaction_receipt(transaction_hash)
+            print(receipt['status'])
+        except ValueError as e:
+            sys.stderr.write(f"An error occurred: {e}\n")
+            exit(1)
 
 
 if __name__ == "__main__":

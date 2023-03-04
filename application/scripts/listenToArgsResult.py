@@ -13,20 +13,20 @@ def handle_event(event, i_scenario):
     with open(filename) as fp:
         listObj = json.load(fp)
 
-    print("i_scenario", i_scenario)
-
     if len(listObj) == int(i_scenario):
-        listObj.append({"arg_decisions": [event["args"]["argumentSet"]]})
+        print("first element")
+        listObj.append({"num_scenario": i_scenario, "arg_decisions": [event["args"]["argumentSet"]]})
     else:
         listObj[int(i_scenario)]["arg_decisions"].append(event["args"]["argumentSet"])
 
     # Verify updated list
-    print(listObj)
+    print({"arg_decisions": [event["args"]["argumentSet"]]})
 
     with open(filename, 'w') as json_file:
         json.dump(listObj, json_file, indent=4)
 
     print('Successfully appended to the JSON file')
+    fp.close()
 
 
 # asynchronous defined function to loop

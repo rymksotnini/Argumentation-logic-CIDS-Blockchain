@@ -169,6 +169,8 @@ contract Argumentation {
         bytes32 current_cluster_id = argument_clusters_llIndex[0x0];
 
         while(current_cluster_id != 0){
+            //naamil boucle for aal arguments array l f site
+            delete argument_clusters[current_cluster_id]; //don't need because for each loop the hashes can't collide because I use the loop number
             delete argument_clusters_llIndex[current_cluster_id];
             current_cluster_id = argument_clusters_llIndex[current_cluster_id];
         }

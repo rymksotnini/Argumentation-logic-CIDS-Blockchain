@@ -9,18 +9,18 @@ import config
 # define function to handle events and print to the console
 def handle_event(event, i_scenario):
     # Read JSON file
-    filename = "../data/results.json"
+    filename = "../data/finalResults.json"
     with open(filename) as fp:
         listObj = json.load(fp)
 
-    print(event["args"])
-    listObj[int(i_scenario)].update({"final_decision": event["args"]["argumentSet"]})
+    listObj.append({"num_scenario": i_scenario, "final_decision": event["args"]["argumentSet"]})
 
     # Verify updated list
-    print(listObj)
+    print({"final_decision": event["args"]["argumentSet"]})
 
     with open(filename, 'w') as json_file:
         json.dump(listObj, json_file, indent=4)
+    fp.close()
 
     print('Successfully appended to the JSON file')
 
